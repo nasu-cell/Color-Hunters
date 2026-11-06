@@ -27,6 +27,10 @@ public class PlayerAnimationController : MonoBehaviour
     {
         animator.SetTrigger("Attack");
     }
+    public void OnAttackHitStart()
+    {
+        playerController.StartAttackHitbox();
+    }
     public void OnAttackAnimationEnd()
     {
         playerController.OnAttackAnimationEnd();
