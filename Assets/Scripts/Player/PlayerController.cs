@@ -134,7 +134,6 @@ public class PlayerController : MonoBehaviour
     }
     private void CheckAttackHit()
     {
-        Debug.Log("攻撃判定中");
         Collider[] hits = Physics.OverlapBox(
             attackPoint.position,
             attackRange / 2f,
@@ -196,6 +195,7 @@ public class PlayerController : MonoBehaviour
 
         knockbackVelocity = direction * knockbackPower;
         verticalVelocity = knockbackUpPower;
+        animationController.Knockback();
     }
 
 }
