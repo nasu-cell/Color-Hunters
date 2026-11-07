@@ -13,12 +13,10 @@ public class PlayerController : MonoBehaviour
         Knockback
     }
     [SerializeField] private bool isDashing; //ダッシュしているか
-    [SerializeField] private float walkSpeed; //歩行速度
-    [SerializeField] private float dashSpeed; //走行速度
+    [SerializeField] private bool isDashPressed; //ダッシュボタンを押しているかどうか
+    [SerializeField] private bool canDash; //ダッシュできるか
     [SerializeField] private float gravity; //重力加速度
     [SerializeField] private float jumpPower; //ジャンプ力
-    [SerializeField] private float knockbackPower; //後ろに吹っ飛ぶ速度
-    [SerializeField] private float knockbackUpPower; //上に吹っ飛ぶ速度
     [SerializeField] private float rotationSpeed; //視点回転速度
     [SerializeField] private Transform attackPoint; //攻撃発生ポイント
     [SerializeField] private Vector3 attackRange; //攻撃範囲
@@ -30,16 +28,44 @@ public class PlayerController : MonoBehaviour
     private Vector3 knockbackVelocity; //ノックバック時の速度
     private PlayerAnimationController animationController; //アニメーションコントローラ
     private CharacterController characterController; //キャラクターコントローラ
+    private PlayerStatus playerStatus; //プレイヤーステータス
     private PlayerState currentState; //プレイヤーの現在の状態
     private HashSet<PlayerController> hitPlayers = new HashSet<PlayerController>();
     private CancellationTokenSource attackCancellation;
+    public PlayerState CurrentState => currentState;
     void Awake()
     {
         animationController = GetComponent<PlayerAnimationController>();
         characterController = GetComponent<CharacterController>();
+        playerStatus = GetComponent<PlayerStatus>();
     }
     void Update()
     {
+        // スタミナ管理
+        if (isDashPressed)
+        {
+            if (!playerStatus.IsDashUnlimited)
+            {
+                playerStatus.ConsumeStamina(Time.deltaTime);
+            }
+        }
+        else
+        {
+            playerStatus.RecoverStamina(Time.deltaTime);
+        }
+
+        if (playerStatus.Stamina > 0f)
+        {
+            canDash = true;
+        }
+        else
+        {
+            canDash = false;
+        }
+
+        //走れってるか判定
+        isDashing = playerStatus.IsDashUnlimited || (canDash && isDashPressed);
+
         Vector3 velocity = Vector3.zero;
 
         // 重力処理
@@ -59,7 +85,7 @@ public class PlayerController : MonoBehaviour
             verticalVelocity += gravity * Time.deltaTime;
         }
 
-        moveSpeed = isDashing ? dashSpeed : walkSpeed;
+        moveSpeed = isDashing ? playerStatus.DashSpeed : playerStatus.WalkSpeed;
 
         // 状態に応じた水平方向の移動
         if (currentState == PlayerState.Normal)
@@ -104,7 +130,7 @@ public class PlayerController : MonoBehaviour
     public void SetMoveInput(Vector3 direction, bool dash)
     {
         moveDirection = direction;
-        isDashing = dash;
+        isDashPressed = dash;
     }
     public void Attack()
     {
@@ -134,6 +160,8 @@ public class PlayerController : MonoBehaviour
     }
     private void CheckAttackHit()
     {
+        float multiplier = playerStatus.KnockbackMultiplier;
+
         Collider[] hits = Physics.OverlapBox(
             attackPoint.position,
             attackRange / 2f,
@@ -150,7 +178,7 @@ public class PlayerController : MonoBehaviour
 
             if (hitPlayers.Add(target))
             {
-                target.StartKnockback(transform.position);
+                target.StartKnockback(transform.position, playerStatus.KnockbackPower * multiplier, playerStatus.KnockbackUpPower * multiplier);
             }
         }
     }
@@ -180,7 +208,7 @@ public class PlayerController : MonoBehaviour
         }
         Debug.Log("UseItem");
     }
-    public void StartKnockback(Vector3 attackerPosition)
+    public void StartKnockback(Vector3 attackerPosition, float power, float upPower)
     {
         if (currentState == PlayerState.Knockback)
         {
@@ -193,8 +221,8 @@ public class PlayerController : MonoBehaviour
         direction.y = 0;
         direction.Normalize();
 
-        knockbackVelocity = direction * knockbackPower;
-        verticalVelocity = knockbackUpPower;
+        knockbackVelocity = direction * power;
+        verticalVelocity = upPower;
         animationController.Knockback();
     }
 

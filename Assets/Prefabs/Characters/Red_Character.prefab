@@ -41,7 +41,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: de13a7420582ded45a8d7d3f96889aca, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 5.112573
+      value: 7.01
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: de13a7420582ded45a8d7d3f96889aca, type: 3}
       propertyPath: m_LocalPosition.y
@@ -174,6 +174,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: de13a7420582ded45a8d7d3f96889aca, type: 3}
       insertIndex: -1
       addedObject: {fileID: 435831959995071654}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: de13a7420582ded45a8d7d3f96889aca, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5841507965544176087}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: de13a7420582ded45a8d7d3f96889aca, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6125545639613484506}
   m_SourcePrefab: {fileID: 100100000, guid: de13a7420582ded45a8d7d3f96889aca, type: 3}
 --- !u!1 &2343563292406275718 stripped
 GameObject:
@@ -217,12 +223,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   isDashing: 0
-  walkSpeed: 5
-  dashSpeed: 10
+  isDashPressed: 0
+  canDash: 0
   gravity: -20
   jumpPower: 10
-  knockbackPower: 10
-  knockbackUpPower: 8
   rotationSpeed: 10
   attackPoint: {fileID: 8548945988862631590}
   attackRange: {x: 2, y: 2, z: 2}
@@ -253,6 +257,44 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &5841507965544176087
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2343563292406275718}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b356d139a10da5446856a7cd7eb2a43f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStatus
+  playerId: 0
+  playerColor: {r: 1, g: 0, b: 0, a: 1}
+  paintRange: {x: 0.5, y: 1, z: 0.5}
+  walkSpeed: 5
+  dashSpeed: 10
+  knockbackPower: 10
+  knockbackUpPower: 8
+  knockbackMultiplier: 1
+  maxStamina: 100
+  staminaConsumption: 50
+  staminaRecovery: 25
+  stamina: 0
+  isPaintRangeExpanded: 0
+  isDashUnlimited: 0
+--- !u!114 &6125545639613484506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2343563292406275718}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e64b3cd9a6726c24f9021d77239bfbd9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TilePaintSystem
 --- !u!4 &3156410675831833660 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: de13a7420582ded45a8d7d3f96889aca, type: 3}
