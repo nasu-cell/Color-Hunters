@@ -24,7 +24,7 @@ public class InputTestController : MonoBehaviour
         transform.position += direction * moveSpeed * Time.deltaTime;
 
         // 通常攻撃
-        if (inputActions.GamePlay.Attack.WasPressedThisFrame())
+        if (inputActions.GamePlay.Punch.WasPressedThisFrame())
         {
             Debug.Log("Attack");
         }

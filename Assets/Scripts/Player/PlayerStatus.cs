@@ -53,4 +53,14 @@ public class PlayerStatus : MonoBehaviour
         stamina += staminaRecovery * deltaTime;
         stamina = Mathf.Min(stamina, maxStamina);
     }
+    //アイテム取得時処理
+    public void SetDashUnlimited(bool value)
+    {
+        isDashUnlimited = value;
+    }
+
+    public void SetPaintRangeExpanded(bool value)
+    {
+        isPaintRangeExpanded = value;
+    }
 }

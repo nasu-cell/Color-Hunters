@@ -32,7 +32,8 @@ Transform:
   m_LocalPosition: {x: 5.0503, y: -1.29, z: 4.44185}
   m_LocalScale: {x: 1, y: 0.2, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 4732548580420055480}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &223147540094441084
@@ -125,3 +126,71 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82882f625831965429c9842d6e171535, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Tile
+  tilePaintEffect: {fileID: 6416680330723782819}
+--- !u!1001 &7767068177949479367
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2485959255541006439}
+    m_Modifications:
+    - target: {fileID: 3055490617772351615, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3055490617772351615, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3055490617772351615, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3055490617772351615, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 3055490617772351615, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 3055490617772351615, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3055490617772351615, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3055490617772351615, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: 3055490617772351615, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3055490617772351615, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3946924653021124523, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+      propertyPath: m_Name
+      value: TilePaintEffect
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+--- !u!4 &4732548580420055480 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3055490617772351615, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+  m_PrefabInstance: {fileID: 7767068177949479367}
+  m_PrefabAsset: {fileID: 0}
+--- !u!198 &6416680330723782819 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 3658765235104096612, guid: 664c0fe4e82b143409f8a4af112c8ee0, type: 3}
+  m_PrefabInstance: {fileID: 7767068177949479367}
+  m_PrefabAsset: {fileID: 0}
