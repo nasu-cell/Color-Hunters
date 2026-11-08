@@ -32,7 +32,7 @@ public class PlayerInputHandler : MonoBehaviour
         controller.SetMoveInput(direction, isDash);
 
         // 通常攻撃
-        if (inputActions.GamePlay.Attack.WasPressedThisFrame())
+        if (inputActions.GamePlay.Punch.WasPressedThisFrame())
         {
             controller.Attack();
         }

@@ -33,6 +33,7 @@ public class PlayerController : MonoBehaviour
     private HashSet<PlayerController> hitPlayers = new HashSet<PlayerController>();
     private CancellationTokenSource attackCancellation;
     public PlayerState CurrentState => currentState;
+    public bool IsDashing => isDashing;
     void Awake()
     {
         animationController = GetComponent<PlayerAnimationController>();
