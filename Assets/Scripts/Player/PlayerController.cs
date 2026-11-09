@@ -22,6 +22,15 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Vector3 attackRange; //攻撃範囲
     [SerializeField] private float attackDuration; //攻撃持続時間
     [SerializeField] private float attackRecoveryTime; //攻撃の後隙
+    [SerializeField] private GameObject energyBulletPrefab; //射撃攻撃プレハブ
+    [SerializeField] private Transform shotPoint; //発射位置
+    [SerializeField] private float maxChargeTime; //最大チャージ時間
+    [SerializeField] private float chargeTime; //チャージ時間
+    [SerializeField] private bool isCharging; //チャージしているかどうか
+    [SerializeField] private float shotRecoveryTime; //チャージショットの最大後隙
+    [SerializeField] private GameObject minePrefab; //地雷プレハブ
+    [SerializeField] private Transform minePoint; //地雷設置位置
+
     private float moveSpeed;　//移動速度
     private Vector3 moveDirection;　//移動方向
     private float verticalVelocity; //上下速度の速度
@@ -29,8 +38,10 @@ public class PlayerController : MonoBehaviour
     private PlayerAnimationController animationController; //アニメーションコントローラ
     private CharacterController characterController; //キャラクターコントローラ
     private PlayerStatus playerStatus; //プレイヤーステータス
+    private PlayerMineController mineController;
     private PlayerState currentState; //プレイヤーの現在の状態
-    private HashSet<PlayerController> hitPlayers = new HashSet<PlayerController>();
+    private HashSet<PlayerController> hitPlayersController = new HashSet<PlayerController>();
+    private HashSet<PlayerStatus> hitPlayersStatus = new HashSet<PlayerStatus>();
     private CancellationTokenSource attackCancellation;
     public PlayerState CurrentState => currentState;
     public bool IsDashing => isDashing;
@@ -39,6 +50,7 @@ public class PlayerController : MonoBehaviour
         animationController = GetComponent<PlayerAnimationController>();
         characterController = GetComponent<CharacterController>();
         playerStatus = GetComponent<PlayerStatus>();
+        mineController = GetComponent<PlayerMineController>();
     }
     void Update()
     {
@@ -127,12 +139,22 @@ public class PlayerController : MonoBehaviour
             knockbackVelocity = Vector3.zero;
             verticalVelocity = -2f;
         }
+
+        //チャージ処理
+        if (isCharging)
+        {
+            chargeTime = Mathf.Min(chargeTime + Time.deltaTime, maxChargeTime);
+        }
     }
+
+    //移動入力の受け取り
     public void SetMoveInput(Vector3 direction, bool dash)
     {
         moveDirection = direction;
         isDashPressed = dash;
     }
+
+    //近接攻撃
     public void Attack()
     {
         if(currentState != PlayerState.Normal)
@@ -148,7 +170,8 @@ public class PlayerController : MonoBehaviour
     }
     private async UniTask AttackHitboxAsync()
     {
-        hitPlayers.Clear();
+        hitPlayersController.Clear();
+        hitPlayersStatus.Clear();
         float elapsedTime = 0f;
 
         while (elapsedTime < attackDuration)
@@ -170,27 +193,37 @@ public class PlayerController : MonoBehaviour
         );
         foreach (Collider hit in hits)
         {
-            PlayerController target = hit.GetComponentInParent<PlayerController>();
+            PlayerController targetController = hit.GetComponentInParent<PlayerController>();
+            PlayerStatus targetStatus = hit.GetComponentInParent<PlayerStatus>();
 
-            if (target == null || target == this)
+            if (targetController == null || targetController == this || targetStatus == null)
             {
                 continue;
             }
 
-            if (hitPlayers.Add(target))
+            if (hitPlayersController.Add(targetController))
             {
-                target.StartKnockback(transform.position, playerStatus.KnockbackPower * multiplier, playerStatus.KnockbackUpPower * multiplier);
+                targetController.StartKnockback(transform.position, playerStatus.KnockbackPower * multiplier, playerStatus.KnockbackUpPower * multiplier);
+            }
+            if (hitPlayersStatus.Add(targetStatus))
+            {
+                targetStatus.Damage(playerStatus.AttackPower);
             }
         }
     }
     public void OnAttackAnimationEnd()
     {
-        AttackRecoveryAsync().Forget();
+        AttackRecoveryAsync(attackRecoveryTime).Forget();
     }
-    private async UniTask AttackRecoveryAsync()
+
+    //攻撃後の後隙
+    private async UniTask AttackRecoveryAsync(float time)
     {
-        await UniTask.Delay(TimeSpan.FromSeconds(attackRecoveryTime));
-        currentState = PlayerState.Normal;
+        await UniTask.Delay(TimeSpan.FromSeconds(time));
+        if (currentState == PlayerState.Attacking)
+        {
+            currentState = PlayerState.Normal;
+        }
     }
     public void Jump()
     {
@@ -200,6 +233,46 @@ public class PlayerController : MonoBehaviour
         }
         animationController.PlayJump();
         verticalVelocity = jumpPower;
+    }
+
+    //射撃処理
+    public void StartCharging()
+    {
+        if(currentState == PlayerState.Normal)
+        {
+            chargeTime = 0f;
+            isCharging = true;
+        }
+    }
+    public void ReleaseShot()
+    {
+        if (!isCharging) return;
+
+        currentState = PlayerState.Attacking;
+
+        isCharging = false;
+
+        float chargeRate = chargeTime / maxChargeTime;
+        EnergyBullet energyBullet = Instantiate(energyBulletPrefab, shotPoint.position, Quaternion.LookRotation(transform.forward)).GetComponent<EnergyBullet>();
+        energyBullet.Initialize(chargeRate, playerStatus.PlayerId, transform.forward);
+
+        chargeTime = 0f;
+        float time = Mathf.Lerp(0, shotRecoveryTime, chargeRate);
+        AttackRecoveryAsync(time).Forget();
+    }
+
+    //地雷設置処理
+    public void SetMine()
+    {
+        if (currentState != PlayerState.Normal)
+        {
+            return;
+        }
+
+        PaintMine mine = Instantiate(minePrefab, minePoint.position, minePrefab.transform.rotation).GetComponent<PaintMine>();
+        mine.Initialize(playerStatus.PlayerId, playerStatus.PlayerColor, mineController);
+
+        mineController.AddMine(mine);
     }
     public void UseItem()
     {
@@ -215,7 +288,11 @@ public class PlayerController : MonoBehaviour
         {
             return;
         }
-
+        if (isCharging)
+        {
+            isCharging = false;
+            chargeTime = 0f;
+        }
         currentState = PlayerState.Knockback;
 
         Vector3 direction = transform.position - attackerPosition;
@@ -226,5 +303,4 @@ public class PlayerController : MonoBehaviour
         verticalVelocity = upPower;
         animationController.Knockback();
     }
-
 }
