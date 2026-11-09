@@ -31,10 +31,26 @@ public class PlayerInputHandler : MonoBehaviour
         isDash = inputActions.GamePlay.Dash.IsPressed();
         controller.SetMoveInput(direction, isDash);
 
-        // 通常攻撃
+        // 近接攻撃
         if (inputActions.GamePlay.Punch.WasPressedThisFrame())
         {
             controller.Attack();
+        }
+
+        //射撃攻撃
+        if (inputActions.GamePlay.Shot.WasPressedThisFrame())
+        {
+            controller.StartCharging();
+        }
+        if (inputActions.GamePlay.Shot.WasReleasedThisFrame())
+        {
+            controller.ReleaseShot();
+        }
+
+        //地雷設置
+        if (inputActions.GamePlay.Mine.WasPressedThisFrame())
+        {
+            controller.SetMine();
         }
 
         // ジャンプ

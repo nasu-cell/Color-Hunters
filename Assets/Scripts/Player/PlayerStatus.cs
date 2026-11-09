@@ -10,11 +10,14 @@ public class PlayerStatus : MonoBehaviour
     [SerializeField] private Vector3 paintRange;
     [SerializeField] private float walkSpeed;
     [SerializeField] private float dashSpeed;
+    [SerializeField] private float attackPower;
     [SerializeField] private float knockbackPower;
     [SerializeField] private float knockbackUpPower;
     [SerializeField] private float knockbackMultiplier;
 
-    [Header("スタミナ")]
+    [Header("HP・スタミナ")]
+    [SerializeField] private float maxHP;
+    [SerializeField] private float currentHP;
     [SerializeField] private float maxStamina;
     [SerializeField] private float staminaConsumption;
     [SerializeField] private float staminaRecovery;
@@ -29,9 +32,12 @@ public class PlayerStatus : MonoBehaviour
     public Vector3 PaintRange => paintRange;
     public float WalkSpeed => walkSpeed;
     public float DashSpeed => dashSpeed;
+    public float AttackPower => attackPower;
     public float KnockbackPower => knockbackPower;
     public float KnockbackUpPower => knockbackUpPower;
     public float KnockbackMultiplier => knockbackMultiplier;
+    public float CurrentHP => currentHP;
+    public float MaxHP => maxHP;
     public float Stamina => stamina;
     public float MaxStamina => maxStamina;
     public bool IsPaintRangeExpanded => isPaintRangeExpanded;
@@ -40,6 +46,18 @@ public class PlayerStatus : MonoBehaviour
     private void Awake()
     {
         stamina = maxStamina;
+        currentHP = maxHP;
+    }
+    //HP変化処理
+    public void Damage(float damage)
+    {
+        currentHP -= damage;
+        currentHP = Mathf.Max(currentHP, 0f);
+    }
+    public void Recover(float heart)
+    {
+        currentHP += heart;
+        currentHP = Mathf.Min(currentHP, maxHP);
     }
     //スタミナ消費処理
     public void ConsumeStamina(float deltaTime)
