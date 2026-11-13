@@ -2,5 +2,8 @@ public enum ItemType
 {
     Dash,
     PaintRange,
-    Shockwave
+    Shockwave,
+    Recover,
+    Attack,
+    Jump,
 }

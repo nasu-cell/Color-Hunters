@@ -35,9 +35,4 @@ public class PlayerAnimationController : MonoBehaviour
     {
         playerController.OnAttackAnimationEnd();
     }
-    public void Knockback()
-    {
-        animator.SetTrigger("Knockback");
-    }
-
 }

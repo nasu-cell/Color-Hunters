@@ -1,4 +1,5 @@
 using UnityEngine;
+using static PlayerController;
 public class PaintMine : MonoBehaviour
 {
     [SerializeField] private Collider hitPoint;
@@ -29,9 +30,9 @@ public class PaintMine : MonoBehaviour
         {
             return;
         }
-
         targetController.StartKnockback(transform.position, knockbackPower, knockbackUpPower);
         targetStatus.Damage(damage);
+        
         PaintTiles(center, halfExtents);
 
         ownerMineController.RemoveMine(this);
