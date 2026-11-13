@@ -128,9 +128,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnergyBullet
   moveSpeed: 8
   lifeTime: 2
-  minDamage: 5
+  minDamage: 3
   maxDamage: 40
-  minKnockbackPower: 8
+  minKnockbackPower: 5
   maxKnockbackPower: 16
   minKnockbackUpPower: 6
   maxKnockbackUpPower: 12

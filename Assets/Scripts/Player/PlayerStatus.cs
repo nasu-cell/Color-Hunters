@@ -59,6 +59,10 @@ public class PlayerStatus : MonoBehaviour
         currentHP += heart;
         currentHP = Mathf.Min(currentHP, maxHP);
     }
+    public void ResetHP()
+    {
+        currentHP = maxHP;
+    }
     //スタミナ消費処理
     public void ConsumeStamina(float deltaTime)
     {

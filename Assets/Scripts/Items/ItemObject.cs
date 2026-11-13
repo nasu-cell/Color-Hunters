@@ -17,6 +17,7 @@ public class ItemObject : MonoBehaviour
         if (other.gameObject.CompareTag("Player"))
         {
             PlayerInventory playerInventory = other.gameObject.GetComponent<PlayerInventory>();
+            PlayerStatus playerStatus = other.gameObject.GetComponent<PlayerStatus>();
 
             if (playerInventory == null) return;
 
@@ -30,7 +31,7 @@ public class ItemObject : MonoBehaviour
                 playerInventory.GetPaintItem();
                 Destroy(gameObject);
             }
-            else
+            else if(itemType == ItemType.Shockwave)
             {
                 playerInventory.GetShockwaveItem();
                 Destroy(gameObject);

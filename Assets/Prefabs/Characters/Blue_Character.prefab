@@ -360,6 +360,7 @@ MonoBehaviour:
   shotRecoveryTime: 0
   minePrefab: {fileID: 8038956470511723370, guid: 8e03e1d04b2a64f4c942ab6c6ee159a0, type: 3}
   minePoint: {fileID: 8087935880698286549}
+  shockwaveItem: {fileID: 8872835911770357751, guid: 27e35db42181bfe4a8fc98290644d2da, type: 3}
 --- !u!143 &435831959995071654
 CharacterController:
   m_ObjectHideFlags: 0

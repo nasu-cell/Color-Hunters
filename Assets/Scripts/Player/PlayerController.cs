@@ -10,8 +10,10 @@ public class PlayerController : MonoBehaviour
     {
         Normal,
         Attacking,
-        Knockback
+        Knockback,
+        Respawning
     }
+    [Header("アクション関連")]
     [SerializeField] private bool isDashing; //ダッシュしているか
     [SerializeField] private bool isDashPressed; //ダッシュボタンを押しているかどうか
     [SerializeField] private bool canDash; //ダッシュできるか
@@ -30,19 +32,26 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float shotRecoveryTime; //チャージショットの最大後隙
     [SerializeField] private GameObject minePrefab; //地雷プレハブ
     [SerializeField] private Transform minePoint; //地雷設置位置
+    [SerializeField] private GameObject shockwaveItem; //衝撃波アイテム
 
+    [Header("内部情報")]
+    private PlayerState currentState; //プレイヤーの現在の状態
     private float moveSpeed;　//移動速度
     private Vector3 moveDirection;　//移動方向
     private float verticalVelocity; //上下速度の速度
     private Vector3 knockbackVelocity; //ノックバック時の速度
+
+    [Header("他クラス参照")]
     private PlayerAnimationController animationController; //アニメーションコントローラ
     private CharacterController characterController; //キャラクターコントローラ
     private PlayerStatus playerStatus; //プレイヤーステータス
-    private PlayerMineController mineController;
-    private PlayerState currentState; //プレイヤーの現在の状態
+    private PlayerMineController mineController; //地雷の設置状況
+    private PlayerInventory playerInventory;
     private HashSet<PlayerController> hitPlayersController = new HashSet<PlayerController>();
     private HashSet<PlayerStatus> hitPlayersStatus = new HashSet<PlayerStatus>();
     private CancellationTokenSource attackCancellation;
+
+    [Header("外部から参照するもの")]
     public PlayerState CurrentState => currentState;
     public bool IsDashing => isDashing;
     void Awake()
@@ -51,105 +60,115 @@ public class PlayerController : MonoBehaviour
         characterController = GetComponent<CharacterController>();
         playerStatus = GetComponent<PlayerStatus>();
         mineController = GetComponent<PlayerMineController>();
+        playerInventory = GetComponent<PlayerInventory>();
     }
     void Update()
     {
-        // スタミナ管理
-        if (isDashPressed)
+        if(currentState != PlayerState.Respawning)
         {
-            if (!playerStatus.IsDashUnlimited)
+            // スタミナ管理
+            if (isDashPressed)
             {
-                playerStatus.ConsumeStamina(Time.deltaTime);
+                if (!playerStatus.IsDashUnlimited)
+                {
+                    playerStatus.ConsumeStamina(Time.deltaTime);
+                }
             }
-        }
-        else
-        {
-            playerStatus.RecoverStamina(Time.deltaTime);
-        }
-
-        if (playerStatus.Stamina > 0f)
-        {
-            canDash = true;
-        }
-        else
-        {
-            canDash = false;
-        }
-
-        //走れってるか判定
-        isDashing = playerStatus.IsDashUnlimited || (canDash && isDashPressed);
-
-        Vector3 velocity = Vector3.zero;
-
-        // 重力処理
-        if (currentState == PlayerState.Knockback)
-        {
-            verticalVelocity += gravity * Time.deltaTime;
-        }
-        else if (characterController.isGrounded)
-        {
-            if (verticalVelocity < 0)
+            else
             {
+                playerStatus.RecoverStamina(Time.deltaTime);
+            }
+
+            if (playerStatus.Stamina > 0f)
+            {
+                canDash = true;
+            }
+            else
+            {
+                canDash = false;
+            }
+
+            //走れってるか判定
+            isDashing = playerStatus.IsDashUnlimited || (canDash && isDashPressed);
+
+            Vector3 velocity = Vector3.zero;
+
+            // 重力処理
+            if (currentState == PlayerState.Knockback)
+            {
+                verticalVelocity += gravity * Time.deltaTime;
+            }
+            else if (characterController.isGrounded)
+            {
+                if (verticalVelocity < 0)
+                {
+                    verticalVelocity = -2f;
+                }
+            }
+            else
+            {
+                verticalVelocity += gravity * Time.deltaTime;
+            }
+
+            moveSpeed = isDashing ? playerStatus.DashSpeed : playerStatus.WalkSpeed;
+
+            // 状態に応じた水平方向の移動
+            if (currentState == PlayerState.Normal)
+            {
+                velocity = moveDirection * moveSpeed;
+
+                float currentSpeed = moveDirection.magnitude * moveSpeed;
+                animationController.UpdateMoveSpeed(currentSpeed);
+                animationController.UpdateDash(isDashing);
+
+                if (moveDirection != Vector3.zero)
+                {
+                    Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
+                    transform.rotation = Quaternion.Slerp(
+                        transform.rotation,
+                        targetRotation,
+                        rotationSpeed * Time.deltaTime
+                    );
+                }
+            }
+            else if (currentState == PlayerState.Knockback)
+            {
+                velocity = knockbackVelocity;
+            }
+
+            // 上下方向の速度を加える
+            velocity.y = verticalVelocity;
+
+            // 移動
+            characterController.Move(velocity * Time.deltaTime);
+
+            // ノックバック終了判定
+            if (currentState == PlayerState.Knockback &&
+                characterController.isGrounded &&
+                verticalVelocity <= 0)
+            {
+                currentState = PlayerState.Normal;
+                knockbackVelocity = Vector3.zero;
                 verticalVelocity = -2f;
             }
-        }
-        else
-        {
-            verticalVelocity += gravity * Time.deltaTime;
-        }
 
-        moveSpeed = isDashing ? playerStatus.DashSpeed : playerStatus.WalkSpeed;
-
-        // 状態に応じた水平方向の移動
-        if (currentState == PlayerState.Normal)
-        {
-            velocity = moveDirection * moveSpeed;
-
-            float currentSpeed = moveDirection.magnitude * moveSpeed;
-            animationController.UpdateMoveSpeed(currentSpeed);
-            animationController.UpdateDash(isDashing);
-
-            if (moveDirection != Vector3.zero)
+            //チャージ処理
+            if (isCharging)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    targetRotation,
-                    rotationSpeed * Time.deltaTime
-                );
+                chargeTime = Mathf.Min(chargeTime + Time.deltaTime, maxChargeTime);
             }
-        }
-        else if (currentState == PlayerState.Knockback)
-        {
-            velocity = knockbackVelocity;
-        }
-
-        // 上下方向の速度を加える
-        velocity.y = verticalVelocity;
-
-        // 移動
-        characterController.Move(velocity * Time.deltaTime);
-
-        // ノックバック終了判定
-        if (currentState == PlayerState.Knockback &&
-            characterController.isGrounded &&
-            verticalVelocity <= 0)
-        {
-            currentState = PlayerState.Normal;
-            knockbackVelocity = Vector3.zero;
-            verticalVelocity = -2f;
-        }
-
-        //チャージ処理
-        if (isCharging)
-        {
-            chargeTime = Mathf.Min(chargeTime + Time.deltaTime, maxChargeTime);
         }
     }
 
     //移動入力の受け取り
     public void SetMoveInput(Vector3 direction, bool dash)
     {
+        if (currentState == PlayerState.Respawning)
+        {
+            moveDirection = Vector3.zero;
+            isDashPressed = false;
+            return;
+        }
         moveDirection = direction;
         isDashPressed = dash;
     }
@@ -201,13 +220,16 @@ public class PlayerController : MonoBehaviour
                 continue;
             }
 
-            if (hitPlayersController.Add(targetController))
+            if(targetController.CurrentState != PlayerState.Respawning)
             {
-                targetController.StartKnockback(transform.position, playerStatus.KnockbackPower * multiplier, playerStatus.KnockbackUpPower * multiplier);
-            }
-            if (hitPlayersStatus.Add(targetStatus))
-            {
-                targetStatus.Damage(playerStatus.AttackPower);
+                if (hitPlayersController.Add(targetController))
+                {
+                    targetController.StartKnockback(transform.position, playerStatus.KnockbackPower * multiplier, playerStatus.KnockbackUpPower * multiplier);
+                }
+                if (hitPlayersStatus.Add(targetStatus))
+                {
+                    targetStatus.Damage(playerStatus.AttackPower);
+                }
             }
         }
     }
@@ -246,7 +268,7 @@ public class PlayerController : MonoBehaviour
     }
     public void ReleaseShot()
     {
-        if (!isCharging) return;
+        if (!isCharging || currentState == PlayerState.Respawning) return;
 
         currentState = PlayerState.Attacking;
 
@@ -280,6 +302,14 @@ public class PlayerController : MonoBehaviour
         {
             return;
         }
+        if (!playerInventory.UseShockwaveItem())
+        {
+            return;
+        }
+
+        ShockwaveItem item = Instantiate(shockwaveItem, transform.position, shockwaveItem.transform.rotation).GetComponent<ShockwaveItem>();
+        item.Initialize(playerStatus.PlayerId, playerStatus.PlayerColor);
+
         Debug.Log("UseItem");
     }
     public void StartKnockback(Vector3 attackerPosition, float power, float upPower)
@@ -301,6 +331,9 @@ public class PlayerController : MonoBehaviour
 
         knockbackVelocity = direction * power;
         verticalVelocity = upPower;
-        animationController.Knockback();
+    }
+    public void StartRespawn()
+    {
+
     }
 }

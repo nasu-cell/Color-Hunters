@@ -1,4 +1,5 @@
 using UnityEngine;
+using static PlayerController;
 
 public class EnergyBullet : MonoBehaviour
 {
@@ -53,9 +54,11 @@ public class EnergyBullet : MonoBehaviour
         {
             return;
         }
-
-        targetController.StartKnockback(transform.position, knockbackPower, knockbackUpPower);
-        targetStatus.Damage(damage);
+        if(targetController.CurrentState != PlayerState.Respawning)
+        {
+            targetController.StartKnockback(transform.position, knockbackPower, knockbackUpPower);
+            targetStatus.Damage(damage);
+        }
 
         Destroy(gameObject);
     }
