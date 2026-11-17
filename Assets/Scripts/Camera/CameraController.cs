@@ -7,6 +7,7 @@ public class CameraController : MonoBehaviour
     
     void LateUpdate()
     {
+        if (target == null) return;
         transform.position = target.position + offset;
     }
     public void SetTarget(Transform newTarget)

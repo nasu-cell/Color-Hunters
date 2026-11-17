@@ -3,7 +3,8 @@ using Cysharp.Threading.Tasks;
 using System;
 using System.Threading;
 using System.Collections.Generic;
-public class PlayerController : MonoBehaviour
+using Fusion; //【変更】Fusionを使う
+public class PlayerController : NetworkBehaviour //【変更】MonoBehaviour → NetworkBehaviour
 {
     //プレイヤーの状態
     public enum PlayerState
@@ -62,21 +63,26 @@ public class PlayerController : MonoBehaviour
         mineController = GetComponent<PlayerMineController>();
         playerInventory = GetComponent<PlayerInventory>();
     }
-    void Update()
+    //【変更】Update → FixedUpdateNetwork（Fusionのtickごとに呼ばれる）
+    // この直後にNetworkTransformが位置を記録するので、移動後の位置が確実に相手へ送られる
+    public override void FixedUpdateNetwork()
     {
-        if(currentState != PlayerState.Respawning)
+        //【追加】自分のキャラだけ動かす
+        if (!HasStateAuthority) return;
+
+        if (currentState != PlayerState.Respawning)
         {
             // スタミナ管理
             if (isDashPressed)
             {
                 if (!playerStatus.IsDashUnlimited)
                 {
-                    playerStatus.ConsumeStamina(Time.deltaTime);
+                    playerStatus.ConsumeStamina(Runner.DeltaTime);
                 }
             }
             else
             {
-                playerStatus.RecoverStamina(Time.deltaTime);
+                playerStatus.RecoverStamina(Runner.DeltaTime);
             }
 
             if (playerStatus.Stamina > 0f)
@@ -96,7 +102,7 @@ public class PlayerController : MonoBehaviour
             // 重力処理
             if (currentState == PlayerState.Knockback)
             {
-                verticalVelocity += gravity * Time.deltaTime;
+                verticalVelocity += gravity * Runner.DeltaTime;
             }
             else if (characterController.isGrounded)
             {
@@ -107,7 +113,7 @@ public class PlayerController : MonoBehaviour
             }
             else
             {
-                verticalVelocity += gravity * Time.deltaTime;
+                verticalVelocity += gravity * Runner.DeltaTime;
             }
 
             moveSpeed = isDashing ? playerStatus.DashSpeed : playerStatus.WalkSpeed;
@@ -127,7 +133,7 @@ public class PlayerController : MonoBehaviour
                     transform.rotation = Quaternion.Slerp(
                         transform.rotation,
                         targetRotation,
-                        rotationSpeed * Time.deltaTime
+                        rotationSpeed * Runner.DeltaTime
                     );
                 }
             }
@@ -140,7 +146,7 @@ public class PlayerController : MonoBehaviour
             velocity.y = verticalVelocity;
 
             // 移動
-            characterController.Move(velocity * Time.deltaTime);
+            characterController.Move(velocity * Runner.DeltaTime);
 
             // ノックバック終了判定
             if (currentState == PlayerState.Knockback &&
@@ -155,7 +161,7 @@ public class PlayerController : MonoBehaviour
             //チャージ処理
             if (isCharging)
             {
-                chargeTime = Mathf.Min(chargeTime + Time.deltaTime, maxChargeTime);
+                chargeTime = Mathf.Min(chargeTime + Runner.DeltaTime, maxChargeTime);
             }
         }
     }
@@ -176,7 +182,7 @@ public class PlayerController : MonoBehaviour
     //近接攻撃
     public void Attack()
     {
-        if(currentState != PlayerState.Normal)
+        if (currentState != PlayerState.Normal)
         {
             return;
         }
@@ -220,16 +226,25 @@ public class PlayerController : MonoBehaviour
                 continue;
             }
 
-            if(targetController.CurrentState != PlayerState.Respawning)
+            if (targetController.CurrentState != PlayerState.Respawning)
             {
                 if (hitPlayersController.Add(targetController))
                 {
-                    targetController.StartKnockback(transform.position, playerStatus.KnockbackPower * multiplier, playerStatus.KnockbackUpPower * multiplier);
+                    //【変更】相手のキャラを直接動かすのではなく、
+                    // 相手のキャラを管理しているPCに「ノックバックとダメージ」をRPCで依頼する
+                    Debug.Log($"[Attack] {name} → {targetController.name} に命中、RPC送信"); // 追加
+                    targetController.RPC_ReceiveHit(
+                        transform.position,
+                        playerStatus.KnockbackPower * multiplier,
+                        playerStatus.KnockbackUpPower * multiplier,
+                        playerStatus.AttackPower
+                    );
                 }
-                if (hitPlayersStatus.Add(targetStatus))
-                {
-                    targetStatus.Damage(playerStatus.AttackPower);
-                }
+                //【削除】ダメージは RPC_ReceiveHit の中で行うので不要
+                //if (hitPlayersStatus.Add(targetStatus))
+                //{
+                //    targetStatus.Damage(playerStatus.AttackPower);
+                //}
             }
         }
     }
@@ -260,7 +275,7 @@ public class PlayerController : MonoBehaviour
     //射撃処理
     public void StartCharging()
     {
-        if(currentState == PlayerState.Normal)
+        if (currentState == PlayerState.Normal)
         {
             chargeTime = 0f;
             isCharging = true;
@@ -332,6 +347,23 @@ public class PlayerController : MonoBehaviour
         knockbackVelocity = direction * power;
         verticalVelocity = upPower;
     }
+    //【追加】攻撃を受けたときの処理
+    // [Rpc] を付けると、別のPCから呼び出せる関数になる
+    //  ・RpcSources.All          : 誰が呼んでもよい(攻撃した相手のPCから呼ばれるため)
+    //  ・RpcTargets.StateAuthority : このキャラの StateAuthority(操作しているPC)で実行する
+    [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+    public void RPC_ReceiveHit(Vector3 attackerPosition, float power, float upPower, float damage)
+    {
+        Debug.Log($"[RPC] {name} が攻撃を受けた damage={damage}");
+
+        if (currentState == PlayerState.Respawning)
+        {
+            return;
+        }
+        StartKnockback(attackerPosition, power, upPower);
+        playerStatus.Damage(damage);
+    }
+
     public void StartRespawn()
     {
 
